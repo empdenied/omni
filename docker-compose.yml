@@ -1,38 +1,15 @@
 name: serverup
 
 services:
-
-  socket-proxy:
-    image: tecnativa/docker-socket-proxy
-    environment:
-      - CONTAINERS=1
-      - SERVICES=1
-      - NETWORKS=1
-      - EVENTS=1
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks: [socket_proxy]
-    restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
-
-
   dockhand:
     image: fnsys/dockhand:latest
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.dockhand.rule=Host(`dockhand.homelab-gw.ts.net`)
-      - traefik.http.routers.dockhand.entrypoints=websecure
-      - traefik.http.routers.dockhand.tls=true
-      - traefik.http.services.dockhand.loadbalancer.server.port=3000
-    networks: [default]
+    container_name: dockhand
     restart: unless-stopped
+    ports:
+      - "3000:3000"
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
       - dockhand_data:/app/data
-
-networks:
-  socket_proxy:
-    internal: true
 
 volumes:
   dockhand_data:
