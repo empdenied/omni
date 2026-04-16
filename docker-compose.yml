@@ -1,0 +1,65 @@
+services:
+  tailscale:
+    image: tailscale/tailscale:latest
+    hostname: homelab-gw
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+    volumes:
+      - tailscale_state:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    restart: unless-stopped
+
+  socket-proxy:
+    image: tecnativa/docker-socket-proxy
+    environment:
+      - CONTAINERS=1
+      - SERVICES=1
+      - NETWORKS=1
+      - EVENTS=1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [socket_proxy]
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  traefik:
+    image: traefik:v3
+    network_mode: service:tailscale
+    depends_on: [socket-proxy]
+    command:
+      - --api.dashboard=true
+      - --providers.docker=true
+      - --providers.docker.endpoint=tcp://socket-proxy:2375
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+    volumes:
+      - traefik_data:/data
+    restart: unless-stopped
+
+  dockhand:
+    image: fnsys/dockhand:latest
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.dockhand.rule=Host(`dockhand.homelab-gw.ts.net`)
+      - traefik.http.routers.dockhand.entrypoints=websecure
+      - traefik.http.routers.dockhand.tls=true
+      - traefik.http.services.dockhand.loadbalancer.server.port=3000
+    networks: [default]
+    restart: unless-stopped
+    volumes:
+      - dockhand_data:/app/data
+
+networks:
+  socket_proxy:
+    internal: true
+
+volumes:
+  tailscale_state:
+  traefik_data:
+  dockhand_data:
