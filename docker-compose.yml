@@ -1,3 +1,5 @@
+name: serverup
+
 services:
   tailscale:
     image: tailscale/tailscale:latest
