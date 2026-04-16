@@ -1,19 +1,6 @@
 name: serverup
 
 services:
-  tailscale:
-    image: tailscale/tailscale:latest
-    hostname: homelab-gw
-    environment:
-      - TS_AUTHKEY=${TS_AUTHKEY}
-      - TS_STATE_DIR=/var/lib/tailscale
-    volumes:
-      - tailscale_state:/var/lib/tailscale
-      - /dev/net/tun:/dev/net/tun
-    cap_add:
-      - net_admin
-      - sys_module
-    restart: unless-stopped
 
   socket-proxy:
     image: tecnativa/docker-socket-proxy
@@ -29,20 +16,6 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  traefik:
-    image: traefik:v3
-    network_mode: service:tailscale
-    depends_on: [socket-proxy]
-    command:
-      - --api.dashboard=true
-      - --providers.docker=true
-      - --providers.docker.endpoint=tcp://socket-proxy:2375
-      - --providers.docker.exposedbydefault=false
-      - --entrypoints.web.address=:80
-      - --entrypoints.websecure.address=:443
-    volumes:
-      - traefik_data:/data
-    restart: unless-stopped
 
   dockhand:
     image: fnsys/dockhand:latest
@@ -62,6 +35,4 @@ networks:
     internal: true
 
 volumes:
-  tailscale_state:
-  traefik_data:
   dockhand_data:
