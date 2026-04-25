@@ -1,74 +1,26 @@
-name: serverup
+name: caddy
 
 services:
-  # Docker Socket Proxy - see https://github.com/Tecnativa/docker-socket-proxy
-  docker-socket-proxy:
-    image: tecnativa/docker-socket-proxy:latest
-    container_name: arcane-docker-proxy
-    environment:
-      - EVENTS=1
-      - PING=1
-      - VERSION=1
-      # Security critical
-      - AUTH=0
-      - SECRETS=0
-      - POST=1
-      # Not always needed
-      - BUILD=0
-      - COMMIT=0
-      - CONFIGS=0
-      - CONTAINERS=1
-      - DISTRIBUTION=0
-      - EXEC=1
-      - IMAGES=1
-      - INFO=1
-      - NETWORKS=1
-      - NODES=0
-      - PLUGINS=0
-      - SERVICES=0
-      - SESSION=0
-      - SWARM=0
-      - SYSTEM=0
-      - TASKS=0
-      - VOLUMES=1
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - arcane-internal
-    restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
-
-  arcane:
-    image: ghcr.io/getarcaneapp/arcane:latest
-    container_name: arcane
-    ports:
-      - '3552:3552'
-    volumes:
-      - arcane-data:/app/data
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - ENCRYPTION_KEY=xxxxxxxxxxxxxxxxxxxxxx
-      - JWT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxx
-      - DOCKER_HOST=tcp://docker-socket-proxy:2375
-    networks:
-      - arcane-internal
-    depends_on:
-      - docker-socket-proxy
-    healthcheck:
-      test: ['CMD-SHELL', 'curl -fsS http://localhost:3552/api/health >/dev/null || exit 1']
-      interval: 10s
-      timeout: 3s
-      retries: 5
-      start_period: 15s
-    restart: unless-stopped
+    caddy:
+        container_name: caddy
+        image: caddy:2.10.0-alpine
+        # publish everything you deem necessary
+        ports:
+            - '80:80/tcp'
+            - '443:443/tcp'
+            - '443:443/udp'
+        networks:
+            - caddy
+        restart: unless-stopped
+        volumes:
+            - './Caddyfile:/etc/caddy/Caddyfile:ro'
+            - config:/config
+            - data:/data
 
 networks:
-  arcane-internal:
-    driver: bridge
-    name: arcane-internal
+    caddy:
+        name: caddy
 
 volumes:
-  arcane-data:
-    name: arcane-data
+    config:
+    data:
