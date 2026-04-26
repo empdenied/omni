@@ -1,0 +1,6 @@
+wg-easy.hamilroad.net {
+        # since the container will share the network with wg-easy
+        # we can use the proper container name
+        reverse_proxy wg-easy:80
+        tls internal
+}
